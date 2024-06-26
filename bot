@@ -1,0 +1,45 @@
+import logging
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
+import requests
+
+# Configuración del logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
+# Token del bot de Telegram
+TELEGRAM_TOKEN = 'TU_TOKEN_DE_TELEGRAM'
+
+# Función para obtener precios en tiempo real
+def get_crypto_price(crypto):
+    url = f'https://api.coingecko.com/api/v3/simple/price?ids={crypto}&vs_currencies=usd'
+    response = requests.get(url).json()
+    return response[crypto]['usd']
+
+# Función para enviar señales
+def send_signal(update: Update, context: CallbackContext):
+    cryptos = ['bitcoin', 'solana', 'ethereum', 'dogecoin', 'render-token']
+    message = ""
+    for crypto in cryptos:
+        price = get_crypto_price(crypto)
+        message += f"El precio actual de {crypto} es ${price}\n"
+    
+    update.message.reply_text(message)
+
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text('¡Bienvenido al bot de señales de criptomonedas! Usa /signal para recibir las señales.')
+
+def main():
+    updater = Updater(TELEGRAM_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("signal", send_signal))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
